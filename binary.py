@@ -6,39 +6,34 @@ def var(i, j, n):
 
 def binary_encoding(n):
     cnf = CNF()
-    binary_vars = []
-
-    num_binary_vars = n.bit_length()  # log2(n)
 
     for i in range(n):
-        binary_vars.append([var(i, j, n) for j in range(n)])
+        row_vars = [var(i, j, n) for j in range(n)]
+        cnf.append(row_vars)
 
-    for i in range(n):
-        cnf.append(binary_vars[i])
-
-    for row in binary_vars:
-        for j in range(len(row)):
-            for k in range(j + 1, len(row)):
-                cnf.append([-row[j], -row[k]])
+        for j in range(n):
+            for k in range(j + 1, n):
+                cnf.append([-row_vars[j], -row_vars[k]])
 
     for j in range(n):
         column_vars = [var(i, j, n) for i in range(n)]
-        cnf.append(column_vars) 
-        for x in range(len(column_vars)):
-            for y in range(x + 1, len(column_vars)):
-                cnf.append([-column_vars[x], -column_vars[y]])  
+        cnf.append(column_vars)
+
+        for i in range(n):
+            for k in range(i + 1, n):
+                cnf.append([-column_vars[i], -column_vars[k]])
+
+    for d in range(-n + 1, n):
+        main_diag_vars = [var(i, i - d, n) for i in range(n) if 0 <= i - d < n]
+        for m in range(len(main_diag_vars)):
+            for k in range(m + 1, len(main_diag_vars)):
+                cnf.append([-main_diag_vars[m], -main_diag_vars[k]])
 
     for d in range(2 * n - 1):
-        main_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
-        anti_diag_vars = [var(i, i - d + n - 1, n) for i in range(n) if 0 <= i - d + n - 1 < n]
-
-        for m in range(len(main_diag_vars)):
-            for n in range(m + 1, len(main_diag_vars)):
-                cnf.append([-main_diag_vars[m], -main_diag_vars[n]])
-
+        anti_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
         for m in range(len(anti_diag_vars)):
-            for n in range(m + 1, len(anti_diag_vars)):
-                cnf.append([-anti_diag_vars[m], -anti_diag_vars[n]])
+            for k in range(m + 1, len(anti_diag_vars)):
+                cnf.append([-anti_diag_vars[m], -anti_diag_vars[k]])
 
     return cnf
 
@@ -67,6 +62,6 @@ def print_solution(solution):
         print("No solution found.")
 
 if __name__ == "__main__":
-    n = 8 
+    n = 8
     solution = solve_n_queens(n)
     print_solution(solution)
