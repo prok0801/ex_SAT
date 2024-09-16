@@ -2,21 +2,22 @@ from pysat.formula import CNF
 from pysat.solvers import Solver
 
 # Global variable for counting auxiliary variables
-new_variables_count = 0  
+new_variables_count = 0
+
 def var(i, j, n):
     return i * n + j + 1
 
-def generate_new_variables(new_variables_count, length, n):
+def generate_new_variables(length, n):
+    global new_variables_count
     start = n ** 2 + new_variables_count
-    return [i for i in range(start + 1, start + length)]
+    new_variables_count += length
+    return [i for i in range(start + 1, start + length + 1)]
 
 def sequential_at_most_one(cnf, variables, n):
-    global new_variables_count
     if len(variables) < 2:
         return
 
-    new_variables = generate_new_variables(new_variables_count, len(variables) - 1, n)
-    new_variables_count += (len(variables) - 1)
+    new_variables = generate_new_variables(len(variables) - 1, n)
 
     cnf.append([-variables[0], new_variables[0]])
     for i in range(1, len(variables) - 1):
