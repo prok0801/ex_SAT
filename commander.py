@@ -7,24 +7,26 @@ def var(i, j, n):
 def add_commander_encoding(cnf, variables, group_size):
     if len(variables) <= 1:
         return
+    
     groups = [variables[i:i + group_size] for i in range(0, len(variables), group_size)]
     commander_vars = []
     
     for group in groups:
         if len(group) > 1:
-            commander_var = max(var for clause in cnf for var in clause) + 1
+            commander_var = len(cnf.clauses) + 1
             commander_vars.append(commander_var)
+
             cnf.append(group + [-commander_var])
-            
+
             for i in range(len(group)):
                 for j in range(i + 1, len(group)):
                     cnf.append([-group[i], -group[j]])
-                    
+            
             for var in group:
                 cnf.append([-commander_var, var])
-                
+    
     if commander_vars:
-        add_commander_encoding(cnf, commander_vars, group_size)
+        add_exactly_one(cnf, commander_vars, group_size)
 
 def add_exactly_one(cnf, variables, group_size):
     cnf.append(variables)
@@ -36,13 +38,13 @@ def generate_clauses(n, group_size):
         row_vars = [var(i, j, n) for j in range(n)]
         col_vars = [var(j, i, n) for j in range(n)]
         add_exactly_one(cnf, row_vars, group_size)
-        add_exactly_one(cnf, col_vars, group_size)  
+        add_exactly_one(cnf, col_vars, group_size)
 
     for d in range(2 * n - 1):
         main_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
         anti_diag_vars = [var(i, i - d + n - 1, n) for i in range(n) if 0 <= i - d + n - 1 < n]
-        add_commander_encoding(cnf, main_diag_vars, group_size)
-        add_commander_encoding(cnf, anti_diag_vars, group_size)
+        add_exactly_one(cnf, main_diag_vars, group_size)
+        add_exactly_one(cnf, anti_diag_vars, group_size)
 
     return cnf
 
