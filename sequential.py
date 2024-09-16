@@ -56,7 +56,7 @@ def solve_n_queens(n):
             return None
 
 if __name__ == "__main__":
-    n = 16 
+    n = 8
     solution = solve_n_queens(n)
     if solution:
         print(f"Solution for {n}-Queens (Optimized Sequential Encoding):")
