@@ -1,6 +1,6 @@
 from pysat.formula import CNF
 from pysat.solvers import Solver
-from math import isqrt
+from math import isqrt, ceil
 
 def var(i, j, n):
     return i * n + j + 1
@@ -8,19 +8,20 @@ def var(i, j, n):
 def add_product_encoding(cnf, variables):
     if len(variables) <= 1:
         return
-    p = isqrt(len(variables))  
-    q = (len(variables) + p - 1) // p 
+
+    p = isqrt(len(variables))  # = floor(sqrt(n))
+    q = ceil(len(variables) / p)  # = ceil(n / p)
 
     row_vars = [max(var for clause in cnf for var in clause) + i + 1 for i in range(p)]
     col_vars = [max(row_vars) + i + 1 for i in range(q)]
 
     for idx, variable in enumerate(variables):
-        r = idx // q  
-        c = idx % q  
+        r = idx // q
+        c = idx % q   
 
         cnf.append([-variable, row_vars[r]])
         cnf.append([-variable, col_vars[c]])
-
+        
     add_at_most_one(cnf, row_vars)
     add_at_most_one(cnf, col_vars)
 
@@ -40,17 +41,17 @@ def generate_clauses(n):
         row_vars = [var(i, j, n) for j in range(n)]
         col_vars = [var(j, i, n) for j in range(n)]
         add_exactly_one(cnf, row_vars) 
-        add_exactly_one(cnf, col_vars)
+        add_exactly_one(cnf, col_vars)  
 
     for d in range(2 * n - 1):
         main_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
         anti_diag_vars = [var(i, i - d + n - 1, n) for i in range(n) if 0 <= i - d + n - 1 < n]
         add_product_encoding(cnf, main_diag_vars)
         add_product_encoding(cnf, anti_diag_vars)
-
     return cnf
 
 def solve_n_queens(n):
+    """Solves the N-Queens problem for a board of size n using a SAT solver with product encoding."""
     cnf = generate_clauses(n)
 
     with Solver(bootstrap_with=cnf) as solver:
