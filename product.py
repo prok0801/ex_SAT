@@ -1,86 +1,60 @@
-from pysat.formula import CNF
 from pysat.solvers import Solver
-from math import isqrt, ceil
+from math import sqrt
 
 def var(i, j, n):
     return i * n + j + 1
 
-def add_product_encoding(cnf, variables):
-    if len(variables) <= 1:
-        return
+def at_most_one(vars, solver):
+    for i in range(len(vars)):
+        for j in range(i + 1, len(vars)):
+            solver.add_clause([-vars[i], -vars[j]])
 
-    p = isqrt(len(variables))  # p = floor(sqrt(n))
-    q = ceil(len(variables) / p)  # q = ceil(n / p)
-
-    row_vars = [max(var for clause in cnf for var in clause if var > 0) + i + 1 for i in range(p)]
-    col_vars = [max(row_vars) + i + 1 for i in range(q)]
-
-    for idx, variable in enumerate(variables):
-        r = idx // q
-        c = idx % q 
-
-        cnf.append([-variable, row_vars[r]])
-        cnf.append([-variable, col_vars[c]])
-
-    add_at_most_one(cnf, row_vars)
-    add_at_most_one(cnf, col_vars)
+def n_queens(n):
+    solver = Solver()
     
-    for idx, variable in enumerate(variables):
-        r = idx // q 
-        c = idx % q   
-        cnf.append([-row_vars[r], -col_vars[c], variable])
-
-def add_at_most_one(cnf, variables):
-    for i in range(len(variables)):
-        for j in range(i + 1, len(variables)):
-            cnf.append([-variables[i], -variables[j]])
-
-def add_exactly_one(cnf, variables):
-    cnf.append(variables)
-    add_product_encoding(cnf, variables)
-
-def generate_clauses(n):
-    cnf = CNF()
-
-    # Row and column constraints
     for i in range(n):
         row_vars = [var(i, j, n) for j in range(n)]
-        col_vars = [var(j, i, n) for j in range(n)]
-        add_exactly_one(cnf, row_vars) 
-        add_exactly_one(cnf, col_vars) 
+        solver.add_clause(row_vars) 
+        at_most_one(row_vars, solver) 
+
+    for j in range(n):
+        col_vars = [var(i, j, n) for i in range(n)]
+        solver.add_clause(col_vars)  
+        at_most_one(col_vars, solver) 
+
+    for d in range(-n + 1, n):
+        diag1_vars = [var(i, i - d, n) for i in range(n) if 0 <= i - d < n]
+        if len(diag1_vars) > 1:
+            at_most_one(diag1_vars, solver)
+
     for d in range(2 * n - 1):
-        main_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
-        anti_diag_vars = [var(i, i - d + n - 1, n) for i in range(n) if 0 <= i - d + n - 1 < n]
-        add_at_most_one(cnf, main_diag_vars)
-        add_at_most_one(cnf, anti_diag_vars)
+        diag2_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
+        if len(diag2_vars) > 1:
+            at_most_one(diag2_vars, solver)
 
-    return cnf
-
-def solve_n_queens(n):
-    cnf = generate_clauses(n)
-
-    with Solver(bootstrap_with=cnf) as solver:
-        if solver.solve():
-            model = solver.get_model()
-            return format_solution(model, n)
+    if solver.solve():
+        model = solver.get_model()
+        solution = []
+        for i in range(n):
+            for j in range(n):
+                if model[var(i, j, n) - 1] > 0:
+                    solution.append((i, j))
+        solver.delete()
+        return solution
+    else:
+        solver.delete()
         return None
 
-def format_solution(model, n):
-    board = [['.'] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if var(i, j, n) in model:
-                board[i][j] = 'Q'
-    return [' '.join(row) for row in board]
-
-def print_solution(solution):
-    if solution:
-        for row in solution:
-            print(row)
-    else:
-        print("No solution found.")
-
 if __name__ == "__main__":
-    n = 8  
-    solution = solve_n_queens(n)
-    print_solution(solution)
+    n = 8 
+    solution = n_queens(n)
+    
+    if solution:
+        print(f"Solution for {n}-Queens:")
+        board = [["." for _ in range(n)] for _ in range(n)]
+        for (i, j) in solution:
+            board[i][j] = "Q"
+        for row in board:
+            print(" ".join(row))
+    else:
+        print(f"No solution found for {n}-Queens")
