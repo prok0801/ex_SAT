@@ -1,17 +1,37 @@
 from pysat.formula import CNF
 from pysat.solvers import Solver
+from math import isqrt
 
 def var(i, j, n):
     return i * n + j + 1
 
-def add_at_most_one_product(cnf, variables):
-    for i in range(len(variables) - 1):
+def add_product_encoding(cnf, variables):
+    if len(variables) <= 1:
+        return
+    p = isqrt(len(variables))  
+    q = (len(variables) + p - 1) // p 
+
+    row_vars = [max(var for clause in cnf for var in clause) + i + 1 for i in range(p)]
+    col_vars = [max(row_vars) + i + 1 for i in range(q)]
+
+    for idx, variable in enumerate(variables):
+        r = idx // q  
+        c = idx % q  
+
+        cnf.append([-variable, row_vars[r]])
+        cnf.append([-variable, col_vars[c]])
+
+    add_at_most_one(cnf, row_vars)
+    add_at_most_one(cnf, col_vars)
+
+def add_at_most_one(cnf, variables):
+    for i in range(len(variables)):
         for j in range(i + 1, len(variables)):
             cnf.append([-variables[i], -variables[j]])
 
 def add_exactly_one(cnf, variables):
     cnf.append(variables)
-    add_at_most_one_product(cnf, variables)
+    add_product_encoding(cnf, variables)
 
 def generate_clauses(n):
     cnf = CNF()
@@ -20,13 +40,13 @@ def generate_clauses(n):
         row_vars = [var(i, j, n) for j in range(n)]
         col_vars = [var(j, i, n) for j in range(n)]
         add_exactly_one(cnf, row_vars) 
-        add_exactly_one(cnf, col_vars)  
+        add_exactly_one(cnf, col_vars)
 
     for d in range(2 * n - 1):
         main_diag_vars = [var(i, d - i, n) for i in range(n) if 0 <= d - i < n]
         anti_diag_vars = [var(i, i - d + n - 1, n) for i in range(n) if 0 <= i - d + n - 1 < n]
-        add_at_most_one_product(cnf, main_diag_vars)
-        add_at_most_one_product(cnf, anti_diag_vars)
+        add_product_encoding(cnf, main_diag_vars)
+        add_product_encoding(cnf, anti_diag_vars)
 
     return cnf
 
