@@ -62,6 +62,6 @@ def print_solution(solution):
         print("No solution found.")
 
 if __name__ == "__main__":
-    n = 8
+    n = 1
     solution = solve_n_queens(n)
     print_solution(solution)
